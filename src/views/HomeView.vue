@@ -41,6 +41,7 @@
                 :disabled="geoLoading"
               >
                 <span class="geo-icon">{{ geoLoading ? '⏳' : '📍' }}</span>
+                <span v-if="geoNombre" class="geo-nombre">{{ geoNombre }}</span>
               </button>
             </div>
 
@@ -64,12 +65,59 @@
       </div>
     </section>
 
+    <!-- Sección invitados (sin sesión y sin búsqueda activa) -->
+    <section v-if="!isAuthenticated" class="guest-section">
+      <div class="container">
+        <div class="guest-cards">
+          <div class="guest-card">
+            <div class="gc-icon">★</div>
+            <h3>Guarda en favoritos</h3>
+            <p>Inicia sesión para guardar tus ciudades y acceder al clima de cada una.</p>
+          </div>
+          <div class="guest-card">
+            <div class="gc-icon">⚙</div>
+            <h3>Personaliza la app</h3>
+            <p>Elige tu unidad de temperatura preferida (°C / °F) y el tema visual que más te guste.</p>
+          </div>
+          <div class="guest-card">
+            <div class="gc-icon">🌍</div>
+            <h3>Pronóstico de 7 días</h3>
+            <p>Visualiza el pronóstico extendido para cualquier ciudad del planeta.</p>
+          </div>
+        </div>
+        <div class="guest-cta">
+          <router-link to="/registro" class="btn btn-primary">Crear cuenta gratis</router-link>
+          <router-link to="/login" class="btn btn-ghost">Ya tengo cuenta</router-link>
+        </div>
+      </div>
+    </section>
+
+    <!-- Favoritos rápidos (usuario logueado) -->
+    <section v-if="isAuthenticated && favoritos.length" class="fav-quick">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Tus favoritos</h2>
+          <router-link to="/favoritos" class="btn btn-ghost btn-sm">Ver todos →</router-link>
+        </div>
+        <div class="fav-grid">
+          <button
+            v-for="fav in favoritos.slice(0, 4)"
+            :key="fav.id"
+            class="fav-quick-card"
+            @click="irAFavorito(fav)"
+          >
+            <span class="fqc-city">{{ fav.ciudad }}</span>
+            <span class="fqc-country">{{ fav.pais }}</span>
+          </button>
+        </div>
+      </div>
+    </section>
 
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { weatherService } from '@/services/weatherService';
@@ -77,11 +125,15 @@ import { weatherService } from '@/services/weatherService';
 const store  = useStore();
 const router = useRouter();
 
+const isAuthenticated = computed(() => store.getters.isAuthenticated);
+const favoritos       = computed(() => store.getters.favoritos);
+
 const query        = ref('');
 const sugerencias  = ref([]);
 const focusIndex   = ref(-1);
 const geoLoading   = ref(false);
 const geoError     = ref('');
+const geoNombre    = ref('');
 
 // ── Búsqueda ──────────────────────────────────────────────
 let debounceTimer = null;
@@ -117,17 +169,23 @@ function seleccionar(s) {
   router.push({ name: 'detalle', params: { ciudad: s.name }, query: { lat: s.latitude, lon: s.longitude, pais: s.country_code || '' } });
 }
 
+function irAFavorito(fav) {
+  router.push({ name: 'detalle', params: { ciudad: fav.ciudad }, query: { lat: fav.lat, lon: fav.lon, pais: fav.pais || '' } });
+}
+
 // ── Geolocalización ────────────────────────────────────────
 async function usarUbicacion() {
   if (!navigator.geolocation) { geoError.value = 'Geolocalización no disponible'; return; }
   geoLoading.value = true;
   geoError.value = '';
+  geoNombre.value = '';
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
       try {
         const { latitude: lat, longitude: lon } = pos.coords;
         const nombre = await weatherService.reverseGeocode(lat, lon);
-        router.push({ name: 'detalle', params: { ciudad: nombre }, query: { lat, lon } });
+        geoNombre.value = nombre ?? '';
+        router.push({ name: 'detalle', params: { ciudad: nombre ?? `${lat.toFixed(2)},${lon.toFixed(2)}` }, query: { lat, lon } });
       } catch {
         geoError.value = 'No se pudo obtener la ciudad.';
       } finally {
@@ -214,9 +272,22 @@ async function usarUbicacion() {
   color: var(--text-primary);
   opacity: 0.6;
   transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .clear-btn:hover, .geo-btn:hover { opacity: 1; }
 .geo-btn.loading { opacity: 0.4; cursor: not-allowed; }
+.geo-nombre {
+  font-size: 0.78rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--accent);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .geo-error { color: #f66; font-size: 0.85rem; margin-top: 0.5rem; text-align: left; }
 
 .suggestions {
@@ -247,4 +318,80 @@ async function usarUbicacion() {
 .suggestion-item:hover, .suggestion-item.focused { background: var(--bg-elevated); }
 .sug-name { font-weight: 600; }
 .sug-meta { font-size: 0.8rem; opacity: 0.6; }
+
+/* Guest section */
+.guest-section { padding: 60px 0; }
+.guest-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+}
+.guest-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  transition: border-color var(--transition), transform var(--transition);
+}
+.guest-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-3px);
+}
+.gc-icon { font-size: 2rem; margin-bottom: 12px; }
+.guest-card h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.guest-card p { color: var(--text-secondary); font-size: 0.9rem; }
+.guest-cta { display: flex; gap: 12px; }
+
+/* Favorites quick */
+.fav-quick { padding: 0 0 60px; }
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+.fav-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.fav-quick-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all var(--transition);
+}
+.fav-quick-card:hover {
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+  transform: translateY(-2px);
+}
+.fqc-city {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.fqc-country { font-size: 0.8rem; color: var(--text-muted); }
+
+@media (max-width: 768px) {
+  .guest-cards { grid-template-columns: 1fr; }
+  .fav-grid    { grid-template-columns: repeat(2, 1fr); }
+}
 </style>

@@ -54,10 +54,10 @@
       </div>
 
       <!-- Hourly forecast -->
-      <div v-if="clima.pronosticoHoras && clima.pronosticoHoras.length" class="wc-hourly">
+      <div v-if="clima.pronostico12h && clima.pronostico12h.length" class="wc-hourly">
         <div class="section-label">Próximas horas</div>
         <div class="hourly-scroll">
-          <div class="hour-item" v-for="(h, i) in clima.pronosticoHoras" :key="i">
+          <div class="hour-item" v-for="(h, i) in clima.pronostico12h" :key="i">
             <span class="h-time">{{ formatHora(h.hora) }}</span>
             <span class="h-icon">{{ h.icono }}</span>
             <span class="h-temp">{{ convertir(h.temperatura) }}°</span>
@@ -68,22 +68,22 @@
       <!-- 7-day forecast with bar chart -->
       <div class="wc-forecast">
         <div
-          v-for="(dia, i) in clima.pronostico"
+          v-for="(dia, i) in clima.pronostico7dias"
           :key="i"
           class="forecast-day"
         >
-          <span class="f-day">{{ dia.dia }}</span>
+          <span class="f-day">{{ formatDia(dia.fecha, i) }}</span>
           <span class="f-icon">{{ dia.icono }}</span>
           <div class="f-bars">
             <div class="f-bar-bg">
               <div
                 class="f-bar-fill"
-                :style="barStyle(dia.max, dia.min)"
+                :style="barStyle(dia.tempMax, dia.tempMin)"
               ></div>
             </div>
           </div>
-          <span class="f-max">{{ convertir(dia.max) }}°</span>
-          <span class="f-min">{{ convertir(dia.min) }}°</span>
+          <span class="f-max">{{ convertir(dia.tempMax) }}°</span>
+          <span class="f-min">{{ convertir(dia.tempMin) }}°</span>
         </div>
       </div>
 
@@ -133,11 +133,21 @@ export default {
 
     const convertir = (val) => weatherService.convertirTemp(val, unidad.value);
 
-    const formatHora = (h) => `${String(h).padStart(2, '0')}:00`;
+    const formatHora = (isoString) => {
+      if (!isoString) return '';
+      return new Date(isoString).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatDia = (fecha, index) => {
+      if (index === 0) return 'Hoy';
+      if (index === 1) return 'Mañana';
+      const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      return dias[new Date(fecha).getDay()];
+    };
 
     const barStyle = (max, min) => {
-      if (!props.clima?.pronostico) return {};
-      const temps = props.clima.pronostico.flatMap((d) => [d.max, d.min]);
+      if (!props.clima?.pronostico7dias) return {};
+      const temps = props.clima.pronostico7dias.flatMap((d) => [d.tempMax, d.tempMin]);
       const globalMin = Math.min(...temps);
       const globalMax = Math.max(...temps);
       const range = globalMax - globalMin || 1;
@@ -162,13 +172,13 @@ export default {
       props.clima ? convertir(props.clima.temperatura) : '--'
     );
     const sensacion = computed(() =>
-      props.clima ? convertir(props.clima.sensacion) : '--'
+      props.clima ? convertir(props.clima.sensacionTermica) : '--'
     );
     const max = computed(() =>
-      props.clima ? convertir(props.clima.max) : '--'
+      props.clima ? convertir(props.clima.tempMax) : '--'
     );
     const min = computed(() =>
-      props.clima ? convertir(props.clima.min) : '--'
+      props.clima ? convertir(props.clima.tempMin) : '--'
     );
 
     const toggleFavorito = () => {
@@ -188,7 +198,7 @@ export default {
     return {
       unidad, isAuthenticated, esFavorito,
       temperatura, sensacion, max, min,
-      convertir, toggleFavorito, weatherTheme, formatHora, barStyle,
+      convertir, toggleFavorito, weatherTheme, formatHora, formatDia, barStyle,
     };
   },
 };
