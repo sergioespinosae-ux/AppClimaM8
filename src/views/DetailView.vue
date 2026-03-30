@@ -272,9 +272,9 @@ async function cargarDatos() {
   if (resultados.length > 0) {
     const r = resultados[0];
     await store.dispatch('cargarClima', {
-      lat: r.lat,
-      lon: r.lon,
-      ciudad: { nombre: r.name, pais: r.country ?? '', lat: r.lat, lon: r.lon },
+      lat: r.latitude,
+      lon: r.longitude,
+      ciudad: { nombre: r.name, pais: r.country_code ?? '', lat: r.latitude, lon: r.longitude },
     });
   }
 }

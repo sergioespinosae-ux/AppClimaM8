@@ -114,7 +114,7 @@ function seleccionarPrimero() {
 function seleccionar(s) {
   limpiarSugerencias();
   query.value = '';
-  router.push({ name: 'detalle', params: { ciudad: s.name }, query: { lat: s.lat, lon: s.lon, pais: s.country || '' } });
+  router.push({ name: 'detalle', params: { ciudad: s.name }, query: { lat: s.latitude, lon: s.longitude, pais: s.country_code || '' } });
 }
 
 // ── Geolocalización ────────────────────────────────────────
