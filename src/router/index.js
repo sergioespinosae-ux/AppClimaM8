@@ -39,6 +39,12 @@ const routes = [
     component: () => import('@/views/RegisterView.vue'),
     meta: { guestOnly: true, title: 'Registrarse' },
   },
+  {
+    path: '/perfil',
+    name: 'perfil',
+    component: () => import('@/views/ProfileView.vue'),
+    meta: { requiresAuth: true, title: 'Perfil – App de Clima' },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ];
 
