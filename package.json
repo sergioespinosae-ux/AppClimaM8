@@ -1,0 +1,19 @@
+{
+  "name": "weather-app-m8",
+  "version": "1.0.0",
+  "description": "App de Clima - Módulo 8 (Portafolio final)",
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "vue": "^3.3.0",
+    "vue-router": "^4.2.0",
+    "vuex": "^4.1.0"
+  },
+  "devDependencies": {
+    "@vue/cli-service": "^5.0.8",
+    "@vue/compiler-sfc": "^3.3.0"
+  }
+}
