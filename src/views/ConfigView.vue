@@ -127,12 +127,15 @@ async function logout() {
 }
 
 .config-page h1 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
 }
 
 .config-section h2 {
+  font-family: var(--font-display);
   font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;

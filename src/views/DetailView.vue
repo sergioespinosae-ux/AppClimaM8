@@ -5,7 +5,12 @@
       <button class="btn-back" @click="$router.back()">← Volver</button>
       <div class="city-info">
         <h1>{{ ciudadActual?.nombre ?? route.params.ciudad }}</h1>
-        <span v-if="ciudadActual?.pais" class="country">{{ ciudadActual.pais }}</span>
+        <div class="city-meta">
+          <span v-if="ciudadActual?.pais" class="country">{{ normalizarPais(ciudadActual.pais) }}</span>
+          <span v-if="ciudadActual?.lat != null" class="coords">
+            {{ Number(ciudadActual.lat).toFixed(2) }}, {{ Number(ciudadActual.lon).toFixed(2) }}
+          </span>
+        </div>
       </div>
       <div class="header-actions">
         <!-- Favorito (solo autenticados) -->
@@ -187,6 +192,15 @@ import { computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
 
+const COUNTRY_NAMES = {
+  CL: 'Chile', AR: 'Argentina', ES: 'España', PE: 'Perú',
+  MX: 'México', CO: 'Colombia', VE: 'Venezuela', BO: 'Bolivia',
+  UY: 'Uruguay', PY: 'Paraguay', EC: 'Ecuador', BR: 'Brasil',
+  US: 'Estados Unidos', DE: 'Alemania', FR: 'Francia', IT: 'Italia',
+  GB: 'Reino Unido', JP: 'Japón', CN: 'China', AU: 'Australia',
+};
+const normalizarPais = (p) => (!p ? '' : COUNTRY_NAMES[p.toUpperCase()] || p);
+
 const store = useStore();
 const route = useRoute();
 
@@ -251,11 +265,12 @@ async function cargarDatos() {
   // Use coordinates from route query if available (faster, avoids extra geocoding call)
   const lat = route.query.lat ? parseFloat(route.query.lat) : null;
   const lon = route.query.lon ? parseFloat(route.query.lon) : null;
+  const paisParam = route.query.pais || '';
   if (lat && lon) {
     await store.dispatch('cargarClima', {
       lat,
       lon,
-      ciudad: { nombre: nombreParam, pais: '', lat, lon },
+      ciudad: { nombre: nombreParam, pais: paisParam, lat, lon },
     });
     return;
   }
@@ -300,10 +315,23 @@ onMounted(cargarDatos);
   margin: 0;
 }
 
+.city-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
 .country {
   font-size: 0.9rem;
-  opacity: 0.7;
-  margin-left: 0.4rem;
+  color: var(--text-secondary);
+}
+
+.coords {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: monospace;
 }
 
 .header-actions {

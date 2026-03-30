@@ -90,8 +90,7 @@ export const weatherService = {
       });
       const addr = data.address || {};
       const ciudad = addr.city || addr.town || addr.village || addr.municipality || addr.county || '';
-      const pais   = addr.country || '';
-      return ciudad ? `${ciudad}, ${pais}` : null;
+      return ciudad || null;
     } catch {
       return null;
     }

@@ -27,7 +27,7 @@
         >
           <div class="fi-info">
             <div class="fi-name">{{ fav.ciudad }}</div>
-            <div class="fi-country">{{ fav.pais }}</div>
+            <div class="fi-country">{{ normalizarPais(fav.pais) }}</div>
             <div class="fi-coords">
               {{ fav.lat != null ? Number(fav.lat).toFixed(2) : '' }}, {{ fav.lon != null ? Number(fav.lon).toFixed(2) : '' }}
             </div>
@@ -77,6 +77,19 @@ import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { weatherService } from '@/services/weatherService';
 
+// Normaliza códigos ISO 2 letras a nombre de país en español
+const COUNTRY_NAMES = {
+  CL: 'Chile', AR: 'Argentina', ES: 'España', PE: 'Perú',
+  MX: 'México', CO: 'Colombia', VE: 'Venezuela', BO: 'Bolivia',
+  UY: 'Uruguay', PY: 'Paraguay', EC: 'Ecuador', BR: 'Brasil',
+  US: 'Estados Unidos', DE: 'Alemania', FR: 'Francia', IT: 'Italia',
+  GB: 'Reino Unido', JP: 'Japón', CN: 'China', AU: 'Australia',
+};
+function normalizarPais(pais) {
+  if (!pais) return '';
+  return COUNTRY_NAMES[pais.toUpperCase()] || pais;
+}
+
 export default {
   name: 'FavoritesView',
   setup() {
@@ -109,7 +122,7 @@ export default {
         lon: fav.lon,
         ciudad: { nombre: fav.ciudad, pais: fav.pais, lat: fav.lat, lon: fav.lon },
       });
-      router.push({ name: 'detalle', params: { ciudad: fav.ciudad }, query: { lat: fav.lat, lon: fav.lon } });
+      router.push({ name: 'detalle', params: { ciudad: fav.ciudad }, query: { lat: fav.lat, lon: fav.lon, pais: fav.pais || '' } });
     };
 
     const confirmarEliminar = (id) => { deletingId.value = id; };
@@ -120,7 +133,7 @@ export default {
 
     return {
       favoritos, unidad, loadingId, deletingId, climaFavs,
-      convertir, verClima, confirmarEliminar, eliminar,
+      convertir, verClima, confirmarEliminar, eliminar, normalizarPais,
     };
   },
 };
@@ -195,7 +208,6 @@ export default {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 10px 16px;
-  min-width: 180px;
 }
 .fi-icon { font-size: 1.5rem; }
 .fi-temp {

@@ -114,7 +114,7 @@ function seleccionarPrimero() {
 function seleccionar(s) {
   limpiarSugerencias();
   query.value = '';
-  router.push({ name: 'detalle', params: { ciudad: s.name }, query: { lat: s.lat, lon: s.lon } });
+  router.push({ name: 'detalle', params: { ciudad: s.name }, query: { lat: s.lat, lon: s.lon, pais: s.country || '' } });
 }
 
 // ── Geolocalización ────────────────────────────────────────
@@ -166,6 +166,7 @@ async function usarUbicacion() {
 .hero-content { text-align: center; }
 
 .hero-title {
+  font-family: var(--font-display);
   font-size: clamp(2.5rem, 6vw, 4.5rem);
   font-weight: 800;
   line-height: 1.1;
@@ -176,7 +177,7 @@ async function usarUbicacion() {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-.hero-sub { font-size: 1.1rem; opacity: 0.7; margin-bottom: 2.5rem; }
+.hero-sub { font-family: var(--font-body); font-size: 1.1rem; opacity: 0.7; margin-bottom: 2.5rem; }
 
 /* Barra de búsqueda */
 .search-wrap { position: relative; max-width: 560px; margin: 0 auto; }
