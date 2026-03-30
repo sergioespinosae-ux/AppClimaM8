@@ -6,7 +6,7 @@
       <div class="city-info">
         <h1>{{ ciudadActual?.nombre ?? route.params.ciudad }}</h1>
         <div class="city-meta">
-          <span v-if="ciudadActual?.pais" class="country">{{ normalizarPais(ciudadActual.pais) }}</span>
+          <span v-if="ciudadActual?.pais" class="country">{{ ciudadActual.pais }}</span>
           <span v-if="ciudadActual?.lat != null" class="coords">
             {{ Number(ciudadActual.lat).toFixed(2) }}, {{ Number(ciudadActual.lon).toFixed(2) }}
           </span>
@@ -191,15 +191,6 @@
 import { computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
-
-const COUNTRY_NAMES = {
-  CL: 'Chile', AR: 'Argentina', ES: 'España', PE: 'Perú',
-  MX: 'México', CO: 'Colombia', VE: 'Venezuela', BO: 'Bolivia',
-  UY: 'Uruguay', PY: 'Paraguay', EC: 'Ecuador', BR: 'Brasil',
-  US: 'Estados Unidos', DE: 'Alemania', FR: 'Francia', IT: 'Italia',
-  GB: 'Reino Unido', JP: 'Japón', CN: 'China', AU: 'Australia',
-};
-const normalizarPais = (p) => (!p ? '' : COUNTRY_NAMES[p.toUpperCase()] || p);
 
 const store = useStore();
 const route = useRoute();

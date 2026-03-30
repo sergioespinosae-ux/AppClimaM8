@@ -27,7 +27,7 @@
         >
           <div class="fi-info">
             <div class="fi-name">{{ fav.ciudad }}</div>
-            <div class="fi-country">{{ normalizarPais(fav.pais) }}</div>
+            <div class="fi-country">{{ fav.pais }}</div>
             <div class="fi-coords">
               {{ fav.lat != null ? Number(fav.lat).toFixed(2) : '' }}, {{ fav.lon != null ? Number(fav.lon).toFixed(2) : '' }}
             </div>
@@ -77,19 +77,6 @@ import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { weatherService } from '@/services/weatherService';
 
-// Normaliza códigos ISO 2 letras a nombre de país en español
-const COUNTRY_NAMES = {
-  CL: 'Chile', AR: 'Argentina', ES: 'España', PE: 'Perú',
-  MX: 'México', CO: 'Colombia', VE: 'Venezuela', BO: 'Bolivia',
-  UY: 'Uruguay', PY: 'Paraguay', EC: 'Ecuador', BR: 'Brasil',
-  US: 'Estados Unidos', DE: 'Alemania', FR: 'Francia', IT: 'Italia',
-  GB: 'Reino Unido', JP: 'Japón', CN: 'China', AU: 'Australia',
-};
-function normalizarPais(pais) {
-  if (!pais) return '';
-  return COUNTRY_NAMES[pais.toUpperCase()] || pais;
-}
-
 export default {
   name: 'FavoritesView',
   setup() {
@@ -133,7 +120,7 @@ export default {
 
     return {
       favoritos, unidad, loadingId, deletingId, climaFavs,
-      convertir, verClima, confirmarEliminar, eliminar, normalizarPais,
+      convertir, verClima, confirmarEliminar, eliminar,
     };
   },
 };
