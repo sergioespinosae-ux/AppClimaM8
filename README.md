@@ -4,7 +4,7 @@ SPA en Vue 3 que consume datos meteorológicos en tiempo real, maneja estado con
 
 ## 🔗 Repositorio
 
-<!-- Agrega aquí el enlace al repositorio de GitHub una vez publicado -->
+[https://github.com/sergioespinosae-ux/AppClimaM8](https://github.com/sergioespinosae-ux/AppClimaM8)
 
 ---
 
