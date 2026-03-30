@@ -172,6 +172,8 @@ export default createStore({
       state.ciudadActual = null;
       state.estadisticas = null;
       state.alertas = [];
+      state.listaLugares = [];
+      localStorage.removeItem('weather_lista_lugares');
     },
 
     ACTUALIZAR_PREFERENCIAS(state, prefs) {
@@ -188,6 +190,15 @@ export default createStore({
       if (!state.usuario.favoritos.find((f) => f.ciudad === ciudad.ciudad)) {
         state.usuario.favoritos.push({ ...ciudad, id: Date.now() });
         localStorage.setItem('weather_user', JSON.stringify(state.usuario));
+        // Sync favorites back to registered users list
+        try {
+          const lista = JSON.parse(localStorage.getItem('weather_registered_users') ?? '[]');
+          const idx = lista.findIndex((u) => u.id === state.usuario.id);
+          if (idx !== -1) {
+            lista[idx].favoritos = state.usuario.favoritos;
+            localStorage.setItem('weather_registered_users', JSON.stringify(lista));
+          }
+        } catch { /* ignore */ }
       }
     },
 
@@ -195,6 +206,15 @@ export default createStore({
       if (!state.usuario) return;
       state.usuario.favoritos = state.usuario.favoritos.filter((f) => f.id !== id);
       localStorage.setItem('weather_user', JSON.stringify(state.usuario));
+      // Sync favorites back to registered users list
+      try {
+        const lista = JSON.parse(localStorage.getItem('weather_registered_users') ?? '[]');
+        const idx = lista.findIndex((u) => u.id === state.usuario.id);
+        if (idx !== -1) {
+          lista[idx].favoritos = state.usuario.favoritos;
+          localStorage.setItem('weather_registered_users', JSON.stringify(lista));
+        }
+      } catch { /* ignore */ }
     },
 
     // ── Lista de lugares ────────────────────────────────

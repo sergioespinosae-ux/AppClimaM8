@@ -5,7 +5,6 @@ SPA en Vue 3 que consume datos meteorológicos en tiempo real, maneja estado con
 ## 🔗 Repositorio
 
 <!-- Agrega aquí el enlace al repositorio de GitHub una vez publicado -->
-`https://github.com/TU_USUARIO/weather-app-m8`
 
 ---
 
@@ -21,17 +20,13 @@ SPA en Vue 3 que consume datos meteorológicos en tiempo real, maneja estado con
 ### Pasos
 
 ```bash
-# 1. Clonar el repositorio
-git clone https://github.com/TU_USUARIO/weather-app-m8.git
-cd weather-app-m8
-
-# 2. Instalar dependencias
+# 1. Instalar dependencias
 npm install
 
-# 3. Iniciar servidor de desarrollo
+# 2. Iniciar servidor de desarrollo
 npm run serve
 
-# 4. Abrir en el navegador
+# 3. Abrir en el navegador
 # http://localhost:8080
 ```
 

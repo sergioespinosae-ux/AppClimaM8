@@ -217,11 +217,12 @@ async function logout() {
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
   border-radius: 12px;
   padding: 0.75rem 1.5rem;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  box-shadow: var(--shadow-md);
   z-index: 9999;
   font-size: 0.95rem;
 }

@@ -12,6 +12,7 @@ src/_backup/
 npm-debug.log*
 
 # Local env
+.env
 .env.local
 .env.*.local
 

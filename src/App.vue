@@ -72,6 +72,13 @@ export default {
 
   --nav-height: 64px;
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Aliases for component scoped styles */
+  --color-primary:      var(--accent);
+  --color-surface:      var(--bg-card);
+  --color-surface-hover:var(--bg-elevated);
+  --color-border:       var(--border);
+  --color-text:         var(--text-primary);
 }
 
 /* Tema Claro */

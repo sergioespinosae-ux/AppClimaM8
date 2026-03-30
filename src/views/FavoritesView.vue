@@ -29,7 +29,7 @@
             <div class="fi-name">{{ fav.ciudad }}</div>
             <div class="fi-country">{{ fav.pais }}</div>
             <div class="fi-coords">
-              {{ fav.lat.toFixed(2) }}, {{ fav.lon.toFixed(2) }}
+              {{ fav.lat != null ? Number(fav.lat).toFixed(2) : '' }}, {{ fav.lon != null ? Number(fav.lon).toFixed(2) : '' }}
             </div>
           </div>
 
@@ -96,7 +96,8 @@ export default {
       for (const fav of favoritos.value) {
         loadingId.value = fav.id;
         try {
-          climaFavs.value[fav.id] = await weatherService.obtenerClima(fav.lat, fav.lon);
+          const clima = await weatherService.obtenerClima(fav.lat, fav.lon);
+          climaFavs.value = { ...climaFavs.value, [fav.id]: clima };
         } catch { /* ignore */ }
       }
       loadingId.value = null;
@@ -106,9 +107,9 @@ export default {
       store.dispatch('cargarClima', {
         lat: fav.lat,
         lon: fav.lon,
-        ciudad: `${fav.ciudad}, ${fav.pais}`,
+        ciudad: { nombre: fav.ciudad, pais: fav.pais, lat: fav.lat, lon: fav.lon },
       });
-      router.push('/');
+      router.push({ name: 'detalle', params: { ciudad: fav.ciudad }, query: { lat: fav.lat, lon: fav.lon } });
     };
 
     const confirmarEliminar = (id) => { deletingId.value = id; };
@@ -184,7 +185,7 @@ export default {
   margin-bottom: 2px;
 }
 .fi-country { color: var(--text-secondary); font-size: 0.85rem; }
-.fi-coords  { color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; font-family: monospace; }
+.fi-coords  { color: var(--text-secondary); font-size: 0.75rem; margin-top: 4px; font-family: monospace; }
 
 .fi-weather {
   display: flex;

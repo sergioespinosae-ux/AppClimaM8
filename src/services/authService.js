@@ -1,11 +1,12 @@
 // src/services/authService.js
 // Servicio de autenticación simulado (sin backend real)
+// Las credenciales de prueba son públicas e intencionales para demo de portafolio
 
-const FAKE_USERS = [
+const SEED_USERS = [
   {
     id: 1,
     nombre: 'Ana García',
-    email: 'ana@clima.com',
+    email: 'ana@demo.com',
     password: '123456',
     preferencias: {
       unidad: 'C',      // 'C' o 'F'
@@ -19,8 +20,8 @@ const FAKE_USERS = [
   {
     id: 2,
     nombre: 'Carlos Mendoza',
-    email: 'carlos@clima.com',
-    password: 'abcdef',
+    email: 'carlos@demo.com',
+    password: '123456',
     preferencias: {
       unidad: 'F',
       tema: 'light',
@@ -46,6 +47,22 @@ const FAKE_USERS = [
   },
 ];
 
+const USERS_STORAGE_KEY = 'weather_registered_users';
+
+// Carga usuarios registrados desde localStorage; si no hay, parte de los seed
+function cargarUsuarios() {
+  try {
+    const raw = localStorage.getItem(USERS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [...SEED_USERS];
+  } catch {
+    return [...SEED_USERS];
+  }
+}
+
+function guardarUsuarios(lista) {
+  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(lista));
+}
+
 // Simula latencia de red
 const delay = (ms = 600) => new Promise((res) => setTimeout(res, ms));
 
@@ -57,7 +74,8 @@ export const authService = {
   async login(email, password) {
     await delay();
 
-    const user = FAKE_USERS.find(
+    const usuarios = cargarUsuarios();
+    const user = usuarios.find(
       (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
     );
 
@@ -86,20 +104,22 @@ export const authService = {
   async register(nombre, email, password) {
     await delay();
 
-    const existe = FAKE_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    const usuarios = cargarUsuarios();
+    const existe = usuarios.find((u) => u.email.toLowerCase() === email.toLowerCase());
     if (existe) {
       throw new Error('Ya existe una cuenta con ese correo.');
     }
 
     const nuevoUsuario = {
-      id: FAKE_USERS.length + 1,
+      id: Date.now(),
       nombre,
       email,
       preferencias: { unidad: 'C', tema: 'dark' },
       favoritos: [],
     };
 
-    FAKE_USERS.push({ ...nuevoUsuario, password });
+    usuarios.push({ ...nuevoUsuario, password });
+    guardarUsuarios(usuarios);
     localStorage.setItem('weather_user', JSON.stringify(nuevoUsuario));
     return nuevoUsuario;
   },

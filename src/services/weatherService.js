@@ -10,27 +10,36 @@ const REVERSE_GEO = 'https://nominatim.openstreetmap.org/reverse';
 // Datos mock para cuando la API no esté disponible
 const MOCK_WEATHER = {
   temperatura: 18,
-  sensacion: 16,
+  sensacionTermica: 16,
   humedad: 65,
   viento: 12,
   descripcion: 'Parcialmente nublado',
   icono: '⛅',
-  max: 22,
-  min: 14,
-  pronostico: [
-    { dia: 'Lun', max: 22, min: 14, icono: '⛅' },
-    { dia: 'Mar', max: 19, min: 12, icono: '🌧️' },
-    { dia: 'Mié', max: 16, min: 10, icono: '🌦️' },
-    { dia: 'Jue', max: 21, min: 13, icono: '☀️' },
-    { dia: 'Vie', max: 24, min: 15, icono: '☀️' },
-    { dia: 'Sáb', max: 20, min: 14, icono: '🌤️' },
-    { dia: 'Dom', max: 17, min: 11, icono: '🌧️' },
-  ],
-  pronosticoHoras: Array.from({ length: 12 }, (_, i) => ({
-    hora: (new Date().getHours() + i) % 24,
-    temperatura: 18 + Math.round(Math.sin(i / 3) * 4),
-    icono: i < 4 ? '⛅' : i < 8 ? '☀️' : '🌤️',
-  })),
+  tempMax: 22,
+  tempMin: 14,
+  pronostico7dias: Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    const fecha = d.toISOString().split('T')[0];
+    const iconos = ['⛅', '🌧️', '🌦️', '☀️', '☀️', '🌤️', '🌧️'];
+    const descs  = ['Parcialmente nublado', 'Lluvia leve', 'Llovizna leve', 'Despejado', 'Despejado', 'Mayormente despejado', 'Lluvia leve'];
+    return {
+      fecha,
+      tempMax: [22, 19, 16, 21, 24, 20, 17][i],
+      tempMin: [14, 12, 10, 13, 15, 14, 11][i],
+      icono: iconos[i],
+      descripcion: descs[i],
+    };
+  }),
+  pronostico12h: Array.from({ length: 12 }, (_, i) => {
+    const d = new Date();
+    d.setHours(d.getHours() + i, 0, 0, 0);
+    return {
+      hora: d.toISOString(),
+      temperatura: 18 + Math.round(Math.sin(i / 3) * 4),
+      icono: i < 4 ? '⛅' : i < 8 ? '☀️' : '🌤️',
+    };
+  }),
 };
 
 const WMO_CODES = {
@@ -115,10 +124,9 @@ export const weatherService = {
 
       // Obtener próximas 12 horas desde la hora actual
       const ahora = new Date(c.time);
-      const horaActual = ahora.getHours();
-      const pronosticoHoras = h.time
+      const pronostico12h = h.time
         .map((t, i) => ({
-          hora: new Date(t).getHours(),
+          hora: t,
           temperatura: Math.round(h.temperature_2m[i]),
           icono: getWMO(h.weather_code[i]).icono,
           timeObj: new Date(t),
@@ -128,20 +136,21 @@ export const weatherService = {
 
       return {
         temperatura: Math.round(c.temperature_2m),
-        sensacion: Math.round(c.apparent_temperature),
+        sensacionTermica: Math.round(c.apparent_temperature),
         humedad: c.relative_humidity_2m,
         viento: Math.round(c.wind_speed_10m),
         descripcion: wmo.desc,
         icono: wmo.icono,
-        max: Math.round(d.temperature_2m_max[0]),
-        min: Math.round(d.temperature_2m_min[0]),
-        pronostico: d.time.slice(0, 7).map((fecha, i) => ({
-          dia: getDayName(fecha),
-          max: Math.round(d.temperature_2m_max[i]),
-          min: Math.round(d.temperature_2m_min[i]),
+        tempMax: Math.round(d.temperature_2m_max[0]),
+        tempMin: Math.round(d.temperature_2m_min[0]),
+        pronostico7dias: d.time.slice(0, 7).map((fecha, i) => ({
+          fecha,
+          tempMax: Math.round(d.temperature_2m_max[i]),
+          tempMin: Math.round(d.temperature_2m_min[i]),
           icono: getWMO(d.weather_code[i]).icono,
+          descripcion: getWMO(d.weather_code[i]).desc,
         })),
-        pronosticoHoras,
+        pronostico12h,
       };
     } catch {
       // Fallback a datos mock

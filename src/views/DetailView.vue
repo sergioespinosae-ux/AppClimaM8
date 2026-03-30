@@ -7,14 +7,19 @@
         <h1>{{ ciudadActual?.nombre ?? route.params.ciudad }}</h1>
         <span v-if="ciudadActual?.pais" class="country">{{ ciudadActual.pais }}</span>
       </div>
-      <button
-        v-if="isAuthenticated"
-        class="btn-fav"
-        :class="{ active: esFavorito }"
-        @click="toggleFavorito"
-      >
-        {{ esFavorito ? '★' : '☆' }}
-      </button>
+      <div class="header-actions">
+        <!-- Favorito (solo autenticados) -->
+        <button
+          v-if="isAuthenticated"
+          class="btn-fav"
+          :class="{ active: esFavorito }"
+          :disabled="climaLoading || !ciudadActual || esFavorito"
+          :title="esFavorito ? 'Ya está en favoritos' : 'Guardar en favoritos'"
+          @click="agregarFavorito"
+        >
+          {{ esFavorito ? '★' : '☆' }}
+        </button>
+      </div>
     </div>
 
     <!-- Estado cargando -->
@@ -195,8 +200,10 @@ const unidad        = computed(() => store.getters.unidad);
 const isAuthenticated = computed(() => store.getters.isAuthenticated);
 const favoritos     = computed(() => store.getters.favoritos);
 
+const nombreCiudad = computed(() => ciudadActual.value?.nombre ?? route.params.ciudad);
+
 const esFavorito = computed(() =>
-  favoritos.value.some((f) => f.ciudad === (ciudadActual.value?.nombre ?? route.params.ciudad))
+  favoritos.value.some((f) => f.ciudad === nombreCiudad.value)
 );
 
 function convertirTemp(c) {
@@ -227,27 +234,33 @@ function barWidth(tempMax) {
   return Math.round((tempMax / maxTempSemana.value) * 100);
 }
 
-function toggleFavorito() {
-  if (!isAuthenticated.value) return;
-  if (esFavorito.value) {
-    const fav = favoritos.value.find((f) => f.ciudad === ciudadActual.value?.nombre);
-    if (fav) store.dispatch('eliminarFavorito', fav.id);
-  } else {
-    store.dispatch('agregarFavorito', {
-      ciudad: ciudadActual.value?.nombre ?? route.params.ciudad,
-      pais: ciudadActual.value?.pais ?? '',
-      lat: ciudadActual.value?.lat,
-      lon: ciudadActual.value?.lon,
-    });
-  }
+function agregarFavorito() {
+  if (!isAuthenticated.value || !ciudadActual.value || esFavorito.value) return;
+  store.dispatch('agregarFavorito', {
+    ciudad: nombreCiudad.value,
+    pais: ciudadActual.value?.pais ?? '',
+    lat: ciudadActual.value?.lat,
+    lon: ciudadActual.value?.lon,
+  });
 }
 
 async function cargarDatos() {
-  // Si ya hay datos del lugar en el store, no recargamos
   const nombreParam = route.params.ciudad;
   if (ciudadActual.value?.nombre === nombreParam && climaActual.value) return;
 
-  // Buscar coordenadas si no están cargadas
+  // Use coordinates from route query if available (faster, avoids extra geocoding call)
+  const lat = route.query.lat ? parseFloat(route.query.lat) : null;
+  const lon = route.query.lon ? parseFloat(route.query.lon) : null;
+  if (lat && lon) {
+    await store.dispatch('cargarClima', {
+      lat,
+      lon,
+      ciudad: { nombre: nombreParam, pais: '', lat, lon },
+    });
+    return;
+  }
+
+  // Fallback: search by city name
   const { weatherService } = await import('@/services/weatherService');
   const resultados = await weatherService.buscarCiudad(nombreParam);
   if (resultados.length > 0) {
@@ -255,7 +268,7 @@ async function cargarDatos() {
     await store.dispatch('cargarClima', {
       lat: r.lat,
       lon: r.lon,
-      ciudad: { nombre: r.nombre, pais: r.pais, lat: r.lat, lon: r.lon },
+      ciudad: { nombre: r.name, pais: r.country ?? '', lat: r.lat, lon: r.lon },
     });
   }
 }
@@ -279,11 +292,12 @@ onMounted(cargarDatos);
   gap: 1rem;
 }
 
+.city-info { flex: 1; }
+
 .detail-header h1 {
   font-size: 1.8rem;
   font-weight: 700;
   margin: 0;
-  flex: 1;
 }
 
 .country {
@@ -292,17 +306,46 @@ onMounted(cargarDatos);
   margin-left: 0.4rem;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-save-list {
+  padding: 0.45rem 1rem;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: opacity 0.2s;
+}
+.btn-save-list:hover { opacity: 0.85; }
+
+.badge-en-lista {
+  padding: 0.45rem 0.9rem;
+  background: rgba(52, 211, 153, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .btn-back {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.5rem 1rem;
   cursor: pointer;
-  color: var(--color-text);
+  color: var(--text-primary);
   font-size: 0.9rem;
   transition: background 0.2s;
 }
-.btn-back:hover { background: var(--color-surface-hover); }
+.btn-back:hover { background: var(--bg-surface); }
 
 .btn-fav {
   background: none;
@@ -310,11 +353,11 @@ onMounted(cargarDatos);
   font-size: 1.8rem;
   cursor: pointer;
   line-height: 1;
-  color: var(--color-text);
-  opacity: 0.5;
+  color: var(--text-primary);
+  opacity: 0.6;
   transition: opacity 0.2s, transform 0.2s;
 }
-.btn-fav:hover, .btn-fav.active { opacity: 1; transform: scale(1.15); }
+.btn-fav:hover, .btn-fav.active { opacity: 1; color: var(--accent); transform: scale(1.15); }
 
 /* Loading & Error */
 .loading-state, .error-state {
@@ -324,8 +367,8 @@ onMounted(cargarDatos);
 }
 .spinner {
   width: 48px; height: 48px;
-  border: 4px solid var(--color-border);
-  border-top-color: var(--color-primary);
+  border: 4px solid var(--border);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 0 auto 1rem;
@@ -412,9 +455,9 @@ onMounted(cargarDatos);
   align-items: center;
   gap: 0.4rem;
 }
-.temp-max { color: var(--color-hot, #ff7043); font-weight: 700; text-align: right; }
-.temp-min { color: var(--color-cold, #64b5f6); opacity: 0.8; }
-.temp-bar-wrap { height: 6px; background: var(--color-border); border-radius: 3px; overflow: hidden; }
+.temp-max { color: #ff7043; font-weight: 700; text-align: right; }
+.temp-min { color: #64b5f6; opacity: 0.8; }
+.temp-bar-wrap { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
 .temp-bar { height: 100%; background: linear-gradient(90deg, #64b5f6, #ff7043); border-radius: 3px; }
 
 /* Estadísticas */
@@ -435,8 +478,8 @@ onMounted(cargarDatos);
 .climate-types h3 { font-size: 0.9rem; opacity: 0.7; margin-bottom: 0.75rem; }
 .type-bars { display: flex; flex-direction: column; gap: 0.5rem; }
 .type-bar-row { display: grid; grid-template-columns: 160px 1fr 60px; align-items: center; gap: 0.75rem; font-size: 0.85rem; }
-.type-bar-bg { height: 8px; background: var(--color-border); border-radius: 4px; overflow: hidden; }
-.type-bar-fill { height: 100%; background: var(--color-primary); border-radius: 4px; transition: width 0.6s ease; }
+.type-bar-bg { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.type-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.6s ease; }
 .type-count { text-align: right; opacity: 0.7; }
 
 /* Pronóstico 12h */
@@ -454,9 +497,11 @@ onMounted(cargarDatos);
   min-width: 56px;
   padding: 0.75rem 0.5rem;
   border-radius: 12px;
-  background: var(--color-surface-hover);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
 }
-.hour-time { font-size: 0.75rem; opacity: 0.7; }
+.hour-time { font-size: 0.75rem; color: var(--text-secondary); }
 .hour-icon { font-size: 1.4rem; }
-.hour-temp { font-size: 0.9rem; font-weight: 600; }
+.hour-temp { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
 </style>

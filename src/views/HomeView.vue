@@ -64,85 +64,12 @@
       </div>
     </section>
 
-    <!-- Lista de lugares con clima actual -->
-    <section class="places-section container">
-      <div class="section-header">
-        <h2>Lugares guardados</h2>
-        <button v-if="listaLugares.length < 8" class="btn-add-place" @click="agregarLugar">
-          + Agregar lugar
-        </button>
-      </div>
 
-      <!-- Cargando lista -->
-      <div v-if="listaLoading" class="list-loading">
-        <div class="spinner"></div>
-        <p>Cargando climas...</p>
-      </div>
-
-      <!-- Error lista -->
-      <div v-else-if="listaError" class="list-error">
-        <p>⚠️ {{ listaError }}</p>
-      </div>
-
-      <!-- Sin lugares -->
-      <div v-else-if="listaLugares.length === 0" class="empty-state">
-        <p class="empty-icon">🗺️</p>
-        <p>No hay lugares guardados aún.</p>
-        <p class="empty-hint">Busca una ciudad y haz clic en "Agregar a lista" para comenzar.</p>
-      </div>
-
-      <!-- Grilla de lugares -->
-      <div v-else class="places-grid">
-        <div
-          v-for="lugar in listaLugares"
-          :key="lugar.ciudad"
-          class="place-card card"
-        >
-          <div class="place-header">
-            <div>
-              <h3>{{ lugar.ciudad }}</h3>
-              <span class="place-country">{{ lugar.pais }}</span>
-            </div>
-            <button class="btn-remove" @click="eliminarLugar(lugar)" title="Quitar de lista">✕</button>
-          </div>
-
-          <div v-if="lugar.clima" class="place-clima">
-            <span class="place-icon">{{ lugar.clima.icono }}</span>
-            <div class="place-temps">
-              <span class="place-temp">{{ convertirTemp(lugar.clima.temperatura) }}°{{ unidad }}</span>
-              <span class="place-desc">{{ lugar.clima.descripcion }}</span>
-            </div>
-            <div class="place-extra">
-              <span>💧 {{ lugar.clima.humedad }}%</span>
-              <span>💨 {{ lugar.clima.viento }} km/h</span>
-            </div>
-          </div>
-          <div v-else class="place-no-clima">Sin datos de clima</div>
-
-          <router-link
-            :to="{ name: 'detalle', params: { ciudad: lugar.ciudad }, query: { lat: lugar.lat, lon: lugar.lon } }"
-            class="btn-detail"
-            @click="precargarClima(lugar)"
-          >
-            Ver detalle →
-          </router-link>
-        </div>
-      </div>
-    </section>
-
-    <!-- Modal agregar lugar -->
-    <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
-      <div class="modal-box card">
-        <h3>Agregar ciudad</h3>
-        <p class="modal-hint">Busca la ciudad en la barra de búsqueda de arriba y haz clic en el resultado.</p>
-        <button class="modal-close" @click="showAddModal = false">Cerrar</button>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { weatherService } from '@/services/weatherService';
@@ -155,20 +82,6 @@ const sugerencias  = ref([]);
 const focusIndex   = ref(-1);
 const geoLoading   = ref(false);
 const geoError     = ref('');
-const showAddModal = ref(false);
-
-// Lugares en localStorage para persistencia sencilla
-const STORAGE_KEY = 'weather_lista_lugares';
-
-const unidad       = computed(() => store.getters.unidad);
-const listaLugares = computed(() => store.getters.listaLugares);
-const listaLoading = computed(() => store.getters.listaLoading);
-const listaError   = computed(() => store.getters.listaError);
-
-function convertirTemp(c) {
-  if (c == null) return '--';
-  return unidad.value === 'F' ? Math.round(c * 9 / 5 + 32) : Math.round(c);
-}
 
 // ── Búsqueda ──────────────────────────────────────────────
 let debounceTimer = null;
@@ -198,17 +111,9 @@ function seleccionarPrimero() {
   if (sugerencias.value[idx]) seleccionar(sugerencias.value[idx]);
 }
 
-async function seleccionar(s) {
+function seleccionar(s) {
   limpiarSugerencias();
   query.value = '';
-  const ciudad = { ciudad: s.name, pais: s.country ?? '', lat: s.lat, lon: s.lon };
-  // Verificar si ya existe
-  if (!listaLugares.value.find((l) => l.ciudad === ciudad.ciudad)) {
-    guardarEnStorage([...listaLugares.value, ciudad]);
-    await store.dispatch('cargarListaLugares', [...listaLugares.value, ciudad]);
-  }
-  // Navegar a detalle
-  precargarClima({ ...ciudad, clima: null });
   router.push({ name: 'detalle', params: { ciudad: s.name }, query: { lat: s.lat, lon: s.lon } });
 }
 
@@ -222,7 +127,6 @@ async function usarUbicacion() {
       try {
         const { latitude: lat, longitude: lon } = pos.coords;
         const nombre = await weatherService.reverseGeocode(lat, lon);
-        precargarClima({ ciudad: nombre, lat, lon });
         router.push({ name: 'detalle', params: { ciudad: nombre }, query: { lat, lon } });
       } catch {
         geoError.value = 'No se pudo obtener la ciudad.';
@@ -233,60 +137,6 @@ async function usarUbicacion() {
     () => { geoError.value = 'Permiso de ubicación denegado.'; geoLoading.value = false; }
   );
 }
-
-// ── Gestión de lista ─────────────────────────────────────
-function guardarEnStorage(lista) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
-}
-
-function cargarDesdeStorage() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
-  } catch { return []; }
-}
-
-function eliminarLugar(lugar) {
-  const nueva = listaLugares.value.filter((l) => l.ciudad !== lugar.ciudad);
-  guardarEnStorage(nueva);
-  store.dispatch('cargarListaLugares', nueva);
-}
-
-function agregarLugar() {
-  showAddModal.value = true;
-}
-
-// ── Precargar clima para la vista de detalle ───────────────
-async function precargarClima(lugar) {
-  if (lugar.clima) {
-    store.commit('SET_CLIMA', {
-      clima: lugar.clima,
-      ciudad: { nombre: lugar.ciudad, pais: lugar.pais, lat: lugar.lat, lon: lugar.lon },
-    });
-  } else {
-    store.dispatch('cargarClima', {
-      lat: lugar.lat,
-      lon: lugar.lon,
-      ciudad: { nombre: lugar.ciudad, pais: lugar.pais, lat: lugar.lat, lon: lugar.lon },
-    });
-  }
-}
-
-// ── Inicialización ────────────────────────────────────────
-onMounted(async () => {
-  const guardados = cargarDesdeStorage();
-  if (guardados.length > 0) {
-    await store.dispatch('cargarListaLugares', guardados);
-  } else {
-    // Cargar ciudades por defecto para demostración
-    const defaults = [
-      { ciudad: 'Santiago', pais: 'Chile', lat: -33.4569, lon: -70.6483 },
-      { ciudad: 'Buenos Aires', pais: 'Argentina', lat: -34.6037, lon: -58.3816 },
-      { ciudad: 'Madrid', pais: 'España', lat: 40.4168, lon: -3.7038 },
-    ];
-    guardarEnStorage(defaults);
-    await store.dispatch('cargarListaLugares', defaults);
-  }
-});
 </script>
 
 <style scoped>
@@ -333,15 +183,15 @@ onMounted(async () => {
 .search-box {
   display: flex;
   align-items: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 0.6rem 0.8rem;
   gap: 0.5rem;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-sm);
   transition: border-color 0.2s;
 }
-.search-box:focus-within { border-color: var(--color-primary); }
+.search-box:focus-within { border-color: var(--accent); }
 
 .search-icon { font-size: 1.1rem; opacity: 0.5; }
 .search-input {
@@ -349,7 +199,7 @@ onMounted(async () => {
   background: none;
   border: none;
   outline: none;
-  color: var(--color-text);
+  color: var(--text-primary);
   font-size: 1rem;
   font-family: inherit;
 }
@@ -360,7 +210,7 @@ onMounted(async () => {
   font-size: 1.1rem;
   padding: 0.2rem 0.4rem;
   border-radius: 8px;
-  color: var(--color-text);
+  color: var(--text-primary);
   opacity: 0.6;
   transition: opacity 0.2s;
 }
@@ -372,12 +222,12 @@ onMounted(async () => {
   position: absolute;
   top: calc(100% + 8px);
   left: 0; right: 0;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
   z-index: 100;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  box-shadow: var(--shadow-md);
 }
 .suggestion-item {
   width: 100%;
@@ -386,129 +236,14 @@ onMounted(async () => {
   padding: 0.75rem 1rem;
   background: none;
   border: none;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
-  color: var(--color-text);
+  color: var(--text-primary);
   text-align: left;
   transition: background 0.15s;
 }
 .suggestion-item:last-child { border-bottom: none; }
-.suggestion-item:hover, .suggestion-item.focused { background: var(--color-surface-hover); }
+.suggestion-item:hover, .suggestion-item.focused { background: var(--bg-elevated); }
 .sug-name { font-weight: 600; }
 .sug-meta { font-size: 0.8rem; opacity: 0.6; }
-
-/* Sección de lugares */
-.places-section { padding: 2rem 1rem 4rem; }
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
-.section-header h2 { font-size: 1.4rem; font-weight: 700; }
-
-.btn-add-place {
-  padding: 0.4rem 1rem;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-/* Estado cargando / error / vacío */
-.list-loading, .list-error { text-align: center; padding: 3rem; opacity: 0.7; }
-.spinner {
-  width: 40px; height: 40px;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto 1rem;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.empty-state { text-align: center; padding: 4rem 1rem; opacity: 0.6; }
-.empty-icon { font-size: 3rem; }
-.empty-hint { font-size: 0.85rem; margin-top: 0.5rem; }
-
-/* Grilla de lugares */
-.places-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.25rem;
-}
-
-.place-card { padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
-
-.place-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-.place-header h3 { font-size: 1.1rem; font-weight: 700; margin: 0; }
-.place-country { font-size: 0.8rem; opacity: 0.6; }
-
-.btn-remove {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: var(--color-text);
-  opacity: 0.4;
-  line-height: 1;
-  transition: opacity 0.2s;
-}
-.btn-remove:hover { opacity: 1; }
-
-.place-clima { display: flex; align-items: center; gap: 0.75rem; }
-.place-icon { font-size: 2.5rem; line-height: 1; }
-.place-temp { font-size: 1.8rem; font-weight: 700; }
-.place-desc { font-size: 0.8rem; opacity: 0.7; text-transform: capitalize; }
-.place-extra { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; opacity: 0.6; margin-left: auto; }
-
-.place-no-clima { font-size: 0.85rem; opacity: 0.5; }
-
-.btn-detail {
-  display: block;
-  text-align: center;
-  padding: 0.6rem;
-  background: var(--color-primary);
-  color: #fff;
-  border-radius: 10px;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: opacity 0.2s;
-}
-.btn-detail:hover { opacity: 0.85; }
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-.modal-box {
-  max-width: 380px;
-  width: 90%;
-  padding: 2rem;
-  text-align: center;
-}
-.modal-box h3 { margin-bottom: 0.75rem; }
-.modal-hint { opacity: 0.7; font-size: 0.9rem; margin-bottom: 1.5rem; }
-.modal-close {
-  padding: 0.5rem 1.5rem;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
 </style>

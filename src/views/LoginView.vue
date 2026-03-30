@@ -59,8 +59,11 @@
       <div class="demo-hint">
         <p>Usuarios de prueba:</p>
         <div class="demo-chips">
-          <button class="demo-chip" @click="usarDemo('ana@clima.com', '123456')">
-            ana@clima.com / 123456
+          <button class="demo-chip" @click="usarDemo('ana@demo.com', '123456')">
+            ana@demo.com / 123456
+          </button>
+          <button class="demo-chip" @click="usarDemo('carlos@demo.com', '123456')">
+            carlos@demo.com / 123456
           </button>
           <button class="demo-chip" @click="usarDemo('demo@demo.com', 'demo')">
             demo@demo.com / demo
